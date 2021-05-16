@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Http\Livewire\DataTable\WithBulkActions;
+use App\Http\Livewire\DataTable\WithCachedRows;
 use App\Http\Livewire\DataTable\WithPerPagePagination;
 use App\Http\Livewire\DataTable\WithShorting;
 use App\Models\Transaction;
@@ -11,7 +12,7 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
-    use WithShorting, WithBulkActions, WithPerPagePagination;
+    use WithShorting, WithBulkActions, WithPerPagePagination, WithCachedRows;
 
     public Transaction $editing;
     public $showDeleteModal = false;
@@ -64,6 +65,13 @@ class Dashboard extends Component
     {
         return Transaction::make(['date' => now(), 'status' => 'success']);
     }
+
+    public function toggleShowFilters()
+    {
+        $this->useCachedRows();
+
+        $this->showFilters = ! $this->showFilters;
+    }
     
     public function updatedFilters()
     {
@@ -77,6 +85,8 @@ class Dashboard extends Component
 
     public function create()
     {
+        $this->useCachedRows();
+    
         if ($this->editing->getkey()) {
             $this->editing = $this->makeBlankTransaction();
         }
@@ -86,6 +96,8 @@ class Dashboard extends Component
 
     public function edit(Transaction $transaction)
     {
+        $this->useCachedRows();
+
         if ($this->editing->isNot($transaction)) {
             $this->editing = $transaction;
         }
@@ -117,7 +129,9 @@ class Dashboard extends Component
 
     public function getRowsProperty()
     {
-        return $this->applyPagination($this->rowsQuery);
+        return $this->cache(function () {
+            return $this->applyPagination($this->rowsQuery);
+        });
     }
 
     public function render()
